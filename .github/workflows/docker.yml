@@ -3,7 +3,6 @@ name: Docker
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
     branches: [main]
 
@@ -21,6 +20,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Extract versions from Dockerfile
+        id: versions
+        run: |
+          CLAUDE_CODE_VERSION=$(grep -oP 'ARG CLAUDE_CODE_VERSION=\K[^\s]+' Dockerfile)
+          CLAUDE_FLOW_VERSION=$(grep -oP 'ARG CLAUDE_FLOW_VERSION=\K[^\s]+' Dockerfile)
+          echo "claude_code=${CLAUDE_CODE_VERSION}" >> $GITHUB_OUTPUT
+          echo "claude_flow=${CLAUDE_FLOW_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -42,11 +49,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=flow-${{ steps.versions.outputs.claude_flow }}-code-${{ steps.versions.outputs.claude_code }},enable={{is_default_branch}}
             type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
             type=sha
 
       - name: Build and push
@@ -58,5 +63,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            CLAUDE_CODE_VERSION=${{ steps.versions.outputs.claude_code }}
+            CLAUDE_FLOW_VERSION=${{ steps.versions.outputs.claude_flow }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

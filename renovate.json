@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "ARG CLAUDE_CODE_VERSION=(?<currentValue>\\S+)"
+      ],
+      "depNameTemplate": "@anthropic-ai/claude-code",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "ARG CLAUDE_FLOW_VERSION=(?<currentValue>\\S+)"
+      ],
+      "depNameTemplate": "claude-flow",
+      "datasourceTemplate": "npm"
+    }
+  ]
+}
